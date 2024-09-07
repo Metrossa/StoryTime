@@ -22,7 +22,7 @@ Insert gif or link to demo
 1. Clone StoryTime
 
 ```bash
-  git clone 
+  git clone https://github.com/Metrossa/StoryTime.git
 ```
 
 2. Create a ```.env``` file with your OPENAI API Key and Cartesia API Key
