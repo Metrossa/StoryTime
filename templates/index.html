@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoryTime</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Manrope%3Awght%40400%3B500%3B700%3B800&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+        }
+        #uploadForm, #audioPlayer, #downloadButton {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #message {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #playlist {
+            list-style-type: none;
+            padding: 0;
+        }
+        #playlist li {
+            cursor: pointer;
+            padding: 5px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        #playlist li.active {
+            background-color: #d0d0d0;
+        }
+        #textDisplay {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .highlight {
+            background-color: yellow;
+        }
+        #filePreview {
+            display: block;
+            font-size: 16px;
+            color: #0d151c;
+        }
+        .custom-slider-container {
+            position: relative;
+            width: 100%;
+            height: 12px; /* Increased height to accommodate the larger thumb */
+            background-color: #e0e0e0;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 12px;
+            background: transparent;
+            outline: none;
+            margin: 0;
+            padding: 0;
+            z-index: 2;
+            position: relative;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2094f3;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 0 4px white;
+            transform: translateY(-1.5px); /* Move the thumb up by 4px */
+        }
+
+        .custom-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2094f3;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 0 4px white;
+            transform: translateY(-1.5px); /* Move the thumb up by 4px */
+        }
+
+        .custom-slider-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: #2094f3;
+            border-radius: 6px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="relative flex size-full min-h-screen flex-col bg-slate-50 group/design-root overflow-x-hidden" style='font-family: Manrope, "Noto Sans", sans-serif;'>
+        <div class="layout-container flex h-full grow flex-col">
+            <!-- Header -->
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e7eef4] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-3">
+                    <div class="flex items-center gap-4 text-[#0d151c]">
+                      <div class="size-4">
+                        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            fill-rule="evenodd"
+                            clip-rule="evenodd"
+                            d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z"
+                            fill="currentColor"
+                          ></path>
+                          <path
+                            fill-rule="evenodd"
+                            clip-rule="evenodd"
+                            d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      </div>
+                      <h2 class="text-[#0d151c] text-lg font-bold leading-tight tracking-[-0.015em]">StoryTime</h2>
+                    </div>
+                    <div class="flex flex-1 justify-end gap-8">
+                      <div class="flex items-center gap-9">
+                        <a class="text-[#0d151c] text-sm font-medium leading-normal" href="/">Home</a>
+                        <a class="text-[#0d151c] text-sm font-medium leading-normal" href="/features">Features</a>
+                        <a class="text-[#0d151c] text-sm font-medium leading-normal" href="/about">About</a>
+                      </div>
+                      <div
+                        class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+                        style='background-image: url("https://i.ytimg.com/vi/VMUcFoA0nk8/mqdefault.jpg");'
+                      ></div>
+                    </div>
+            </header>
+
+            <!-- Main content -->
+            <div class="flex flex-1 justify-center py-5">
+                <div class="layout-content-container flex flex-col w-full max-w-[1200px] flex-1">
+
+                    
+        <!-- File upload and preview section -->
+        <div class="flex flex-col items-center justify-center px-4 py-8">
+            <h1 class="text-[#0d151c] tracking-light text-[32px] font-bold leading-tight text-center pb-6">Convert your PDF to an immersive audiobook</h1>
+            
+            <div class="flex flex-col sm:flex-row justify-center items-start gap-8 w-full max-w-3xl">
+                <div class="w-full sm:w-1/2">
+                    <h2 class="text-[#0d151c] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-3 text-center">Upload your file</h2>
+                    <form id="uploadForm" enctype="multipart/form-data" class="flex flex-col items-center">
+                        <input type="file" id="pdfFile" name="pdf" accept=".pdf" required class="hidden">
+                        <button type="button" onclick="document.getElementById('pdfFile').click()" class="flex min-w-[84px] w-full max-w-[240px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#2094f3] text-slate-50 text-sm font-bold leading-normal tracking-[0.015em] mb-3">
+                            <span class="truncate">Upload new file</span>
+                        </button>
+                        <button type="submit" class="flex min-w-[84px] w-full max-w-[240px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#2094f3] text-slate-50 text-sm font-bold leading-normal tracking-[0.015em]">
+                            <span class="truncate">Convert</span>
+                        </button>
+                    </form>
+                </div>
+                <div class="w-full sm:w-1/2">
+                    <h2 class="text-[#0d151c] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-3 text-center">Your file</h2>
+                    <div id="filePreview" class="text-[#0d151c] text-base leading-normal text-center" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div id="message" class="text-center mt-4">
+                <div id="progressIndicator" class="w-full max-w-3xl bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 hidden mt-2">
+                    <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+                    <!-- Audio player -->
+                    <div id="audioPlayer" style="display: none;" class="mt-8">
+                        <div class="flex flex-col gap-3 rounded-xl bg-[#e7eef4] px-4 py-3">
+                            <div class="flex items-center gap-4 overflow-hidden">
+                                <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-14 shrink-0" style='background-image: url("https://cdn.usegalileo.ai/sdxl10/a8fc8c7f-f377-4bb7-af3d-c41d7df88c88.png");'></div>
+                                <div class="flex-1">
+                                    <p class="text-[#0d151c] text-base font-bold leading-tight truncate">Audio Player</p>
+                                    <p class="text-[#49779c] text-sm font-normal leading-normal truncate">Audiobook</p>
+                                </div>
+                                <audio id="audio" class="hidden"></audio>
+                                <button id="playPauseBtn" class="flex shrink-0 items-center justify-center rounded-full size-10 bg-[#2094f3] text-slate-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="pt-1.5">
+                                <div class="custom-slider-container">
+                                    <input type="range" id="seekBar" class="custom-slider" value="0" min="0" max="100" step="0.1">
+                                    <div class="custom-slider-progress"></div>
+                                </div>
+                                <div class="flex items-center justify-between mt-1">
+                                    <p id="currentTime" class="text-[#49779c] text-xs font-medium leading-normal tracking-[0.015em]">0:00</p>
+                                    <p id="duration" class="text-[#49779c] text-xs font-medium leading-normal tracking-[0.015em]">0:00</p>
+                                </div>
+                            </div>
+                        </div>
+                        <ul id="playlist" class="mt-4"></ul>
+                    </div>
+
+                    <!-- Text display -->
+                    <div id="textDisplay" class="mt-8 p-4 bg-white rounded-xl shadow" style="display: none;"></div>
+
+                    <!-- Download button -->
+                    <div id="downloadButton" class="mt-8 text-center" style="display: none;">
+                        <button onclick="downloadAudio()" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#2094f3] text-slate-50 text-sm font-bold leading-normal tracking-[0.015em] mx-auto">
+                            <span class="truncate">Download All Audio Files</span>
+                        </button>
+                    </div>
+
+            <!-- Featured Audiobooks Section -->
+            <section class="py-8 px-4">
+                <h2 class="text-[#0d151c] text-[28px] font-bold leading-tight tracking-[-0.015em] mb-6 text-center">Featured Audiobooks</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Featured Audiobook Card 1 -->
+                    <div class="featured-audiobook bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="h-96 overflow-hidden">
+                            <img src="https://i.pinimg.com/474x/59/d9/52/59d952d3fdde91f814725fb57bae6b84.jpg" alt="The Great Gatsby" class="w-full object-cover object-top">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold mb-2">The Great Gatsby</h3>
+                            <button class="play-pause-btn bg-[#2094f3] text-white rounded-full p-2 hover:bg-[#1a7fd3]" data-audio="static\featured\gatsu.wav">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="play-icon">
+                                    <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="pause-icon hidden">
+                                    <path d="M216,48V208a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8h48A8,8,0,0,1,216,48ZM96,40H48A8,8,0,0,0,40,48V208a8,8,0,0,0,8,8H96a8,8,0,0,0,8-8V48A8,8,0,0,0,96,40Z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Featured Audiobook Card 2 -->
+                    <div class="featured-audiobook bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="h-96 overflow-hidden">
+                            <img src="https://i.pinimg.com/564x/1b/c1/8d/1bc18da170a1c20c7d6a6f489a634efd.jpg" alt="Pride and Prejudice" class="w-full object-cover object-top">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold mb-2">Pride and Prejudice</h3>
+                            <button class="play-pause-btn bg-[#2094f3] text-white rounded-full p-2 hover:bg-[#1a7fd3]" data-audio="static\featured\pride.wav">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="play-icon">
+                                    <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="pause-icon hidden">
+                                    <path d="M216,48V208a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8h48A8,8,0,0,1,216,48ZM96,40H48A8,8,0,0,0,40,48V208a8,8,0,0,0,8,8H96a8,8,0,0,0,8-8V48A8,8,0,0,0,96,40Z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Featured Audiobook Card 3 -->
+                    <div class="featured-audiobook bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="h-96 overflow-hidden">
+                            <img src="https://i.icanvas.com/CKG1077?d=2&sh=v&p=1&bg=g" alt="To Kill a Mockingbird" class="w-full object-cover object-top">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold mb-2">To Kill a Mockingbird</h3>
+                            <button class="play-pause-btn bg-[#2094f3] text-white rounded-full p-2 hover:bg-[#1a7fd3]" data-audio="static\featured\Mocker.wav">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="play-icon">
+                                    <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="pause-icon hidden">
+                                    <path d="M216,48V208a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8h48A8,8,0,0,1,216,48ZM96,40H48A8,8,0,0,0,40,48V208a8,8,0,0,0,8,8H96a8,8,0,0,0,8-8V48A8,8,0,0,0,96,40Z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Featured Audiobook Card 4 -->
+                    <div class="featured-audiobook bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="h-96 overflow-hidden">
+                            <img src="https://i.etsystatic.com/31513412/r/il/455f92/4081428546/il_570xN.4081428546_dl25.jpg" alt="1984" class="w-full object-cover object-top">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold mb-2">1984</h3>
+                            <button class="play-pause-btn bg-[#2094f3] text-white rounded-full p-2 hover:bg-[#1a7fd3]" data-audio="static\featured\bigbro.wav">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="play-icon">
+                                    <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" class="pause-icon hidden">
+                                    <path d="M216,48V208a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8h48A8,8,0,0,1,216,48ZM96,40H48A8,8,0,0,0,40,48V208a8,8,0,0,0,8,8H96a8,8,0,0,0,8-8V48A8,8,0,0,0,96,40Z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="flex justify-center">
+                <div class="flex max-w-[960px] flex-1 flex-col">
+                    <footer class="flex flex-col gap-6 px-5 py-10 text-center @container">
+                      <div class="flex flex-wrap items-center justify-center gap-6 @[480px]:flex-row @[480px]:justify-around">
+                        <a class="text-[#49779c] text-base font-normal leading-normal min-w-40" href="/">Home</a>
+                        <a class="text-[#49779c] text-base font-normal leading-normal min-w-40" href="/features">Features</a>
+                        <a class="text-[#49779c] text-base font-normal leading-normal min-w-40" href="/about">About</a>
+                      </div>
+                      <p class="text-[#49779c] text-base font-normal leading-normal">© 2024 StoryTime</p>
+                    </footer>
+                  </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        let audioFiles = [];
+        let textChunks = [];
+        let eventSource;
+
+        document.getElementById('pdfFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                displayFilePreview(file);
+            }
+        });
+
+        function displayFilePreview(file) {
+            const filePreview = document.getElementById('filePreview');
+            filePreview.style.display = 'block';
+            filePreview.textContent = file.name;
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('pdfFile');
+            const messageDiv = document.getElementById('message');
+            const progressIndicator = document.getElementById('progressIndicator');
+            
+            if (fileInput.files.length === 0) {
+                messageDiv.textContent = 'Please select a PDF file.';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            displayFilePreview(file);
+            const formData = new FormData();
+            formData.append('pdf', fileInput.files[0]);
+
+            messageDiv.textContent = 'Converting...';
+            progressIndicator.style.display = 'block';
+
+            // Set up progress updates before sending the request
+            setupProgressUpdates();
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.textContent = 'Conversion successful!';
+                    audioFiles = result.audio_files;
+                    textChunks = result.text_chunks;
+                    displayAudioPlayer();
+                    displayTextChunks();
+                } else {
+                    handleError(response, result);
+                }
+            } catch (error) {
+                messageDiv.textContent = `An error occurred: ${error.message}`;
+            } finally {
+                progressIndicator.style.display = 'none';
+                if (eventSource) {
+                    eventSource.close();
+                }
+            }
+        });
+
+        function handleError(response, result) {
+            const messageDiv = document.getElementById('message');
+            if (response.status === 413) {
+                messageDiv.textContent = 'Error: File too large';
+            } else {
+                messageDiv.textContent = `Error: ${result.error || 'An unknown error occurred'}`;
+            }
+        }
+
+        function displayAudioPlayer() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playlist = document.getElementById('playlist');
+            const downloadButton = document.getElementById('downloadButton');
+            const filePreview = document.getElementById('filePreview');
+
+            audioPlayer.style.display = 'block';
+            downloadButton.style.display = 'block';
+            filePreview.style.display = 'block';
+            playlist.innerHTML = '';
+
+            audioFiles.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.textContent = `Audio ${index + 1}`;
+                li.onclick = () => playAudio(file, index);
+                li.className = 'cursor-pointer p-2 hover:bg-gray-100 rounded';
+                playlist.appendChild(li);
+            });
+
+            if (audioFiles.length > 0) {
+                playAudio(audioFiles[0], 0);
+            }
+
+            setupAudioControls();
+        }
+
+        function setupAudioControls() {
+            const audio = document.getElementById('audio');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const seekBar = document.getElementById('seekBar');
+            const sliderProgress = document.querySelector('.custom-slider-progress');
+            const currentTime = document.getElementById('currentTime');
+            const duration = document.getElementById('duration');
+
+            audio.onloadedmetadata = () => {
+                seekBar.max = audio.duration;
+                duration.textContent = formatTime(audio.duration);
+                currentTime.textContent = '0:00';
+            };
+
+            audio.ontimeupdate = () => {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                seekBar.value = audio.currentTime;
+                sliderProgress.style.width = `${progress}%`;
+                currentTime.textContent = formatTime(audio.currentTime);
+            };
+
+            seekBar.oninput = () => {
+                const progress = (seekBar.value / audio.duration) * 100;
+                sliderProgress.style.width = `${progress}%`;
+                currentTime.textContent = formatTime(seekBar.value);
+            };
+
+            seekBar.onchange = () => {
+                audio.currentTime = seekBar.value;
+            };
+
+            playPauseBtn.onclick = togglePlayPause;
+        }
+
+        function togglePlayPause() {
+            const audio = document.getElementById('audio');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if (audio.paused) {
+                audio.play();
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M216,48V208a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8h48A8,8,0,0,1,216,48ZM96,40H48A8,8,0,0,0,40,48V208a8,8,0,0,0,8,8H96a8,8,0,0,0,8-8V48A8,8,0,0,0,96,40Z"></path>
+                    </svg>
+                `;
+            } else {
+                audio.pause();
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path>
+                    </svg>
+                `;
+            }
+        }
+
+        function formatTime(time) {
+            const minutes = Math.floor(time / 60);
+            const seconds = Math.floor(time % 60);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function displayTextChunks() {
+            const textDisplay = document.getElementById('textDisplay');
+            textDisplay.style.display = 'block';
+            textDisplay.innerHTML = textChunks.map((chunk, index) => 
+                `<p id="chunk-${index}">${chunk}</p>`
+            ).join('');
+        }
+
+        function playAudio(src, index) {
+            const audio = document.getElementById('audio');
+            const seekBar = document.getElementById('seekBar');
+            const sliderProgress = document.querySelector('.custom-slider-progress');
+            const currentTime = document.getElementById('currentTime');
+            
+            audio.src = src;
+            audio.pause();
+            
+            seekBar.value = 0;
+            sliderProgress.style.width = '0%';
+            currentTime.textContent = '0:00';
+            
+            audio.load();
+            setupAudioControls();
+        }
+
+        function highlightText(index) {
+            const textDisplay = document.getElementById('textDisplay');
+            Array.from(textDisplay.children).forEach((p, i) => {
+                if (i === index) {
+                    p.classList.add('highlight');
+                    p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    p.classList.remove('highlight');
+                }
+            });
+        }
+
+        async function downloadAudio() {
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ audio_files: audioFiles }),
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = downloadUrl;
+                    a.download = 'audio_files.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                } else {
+                    const result = await response.json();
+                    console.error('Download failed:', result.error);
+                }
+            } catch (error) {
+                console.error('An error occurred during download:', error);
+            }
+        }
+
+        function setupProgressUpdates() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            eventSource = new EventSource('/progress');
+            const progressBar = document.getElementById('progressBar');
+            eventSource.onmessage = (event) => {
+                const progress = JSON.parse(event.data).progress;
+                progressBar.style.width = `${progress}%`;
+            };
+            eventSource.onerror = () => {
+                eventSource.close();
+            };
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const featuredAudiobooks = document.querySelectorAll('.featured-audiobook');
+            let currentlyPlaying = null;
+
+            featuredAudiobooks.forEach(audiobook => {
+                const playPauseBtn = audiobook.querySelector('.play-pause-btn');
+                const playIcon = playPauseBtn.querySelector('.play-icon');
+                const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+                const audio = new Audio(playPauseBtn.dataset.audio);
+
+                playPauseBtn.addEventListener('click', () => {
+                    if (currentlyPlaying && currentlyPlaying !== audio) {
+                        currentlyPlaying.pause();
+                        resetPlayPauseBtn(currentlyPlaying);
+                    }
+
+                    if (audio.paused) {
+                        audio.play();
+                        playIcon.classList.add('hidden');
+                        pauseIcon.classList.remove('hidden');
+                        currentlyPlaying = audio;
+                    } else {
+                        audio.pause();
+                        playIcon.classList.remove('hidden');
+                        pauseIcon.classList.add('hidden');
+                        currentlyPlaying = null;
+                    }
+                });
+
+                audio.addEventListener('ended', () => {
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                    currentlyPlaying = null;
+                });
+            });
+
+            function resetPlayPauseBtn(audio) {
+                const audiobook = document.querySelector(`[data-audio="${audio.src}"]`).closest('.featured-audiobook');
+                const playIcon = audiobook.querySelector('.play-icon');
+                const pauseIcon = audiobook.querySelector('.pause-icon');
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
