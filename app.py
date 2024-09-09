@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file
 import os
 from storytimev1 import pdf_to_audio
 import zipfile
@@ -7,31 +7,20 @@ from cartesia import Cartesia
 
 app = Flask(__name__)
 
-# Helper function to get HTML content
-def get_html_content(file_name):
-    with open(file_name, 'r') as file:
-        return file.read()
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def catch_all(path):
-    if path == '':
-        return get_html_content('index.html')
-    elif path == 'features':
-        return get_html_content('features.html')
-    elif path == 'about':
-        return get_html_content('about.html')
-    elif path == 'convert':
-        return handle_convert()
-    elif path == 'download':
-        return handle_download()
-    else:
-        return "Not Found", 404
+@app.route('/features')
+def features():
+    return render_template('features.html')
 
-def handle_convert():
-    if request.method != 'POST':
-        return jsonify({'error': 'Method not allowed'}), 405
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
+@app.route('/convert', methods=['POST'])
+def convert():
     if 'pdf' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -41,10 +30,10 @@ def handle_convert():
     
     if file and file.filename.endswith('.pdf'):
         filename = file.filename
-        file_path = '/tmp/' + filename  # Use /tmp for serverless function
+        file_path = os.path.join('uploads', filename)
         file.save(file_path)
         
-        output_dir = '/tmp/output'
+        output_dir = 'static/output'
         os.makedirs(output_dir, exist_ok=True)
         output_path_prefix = os.path.join(output_dir, 'output_chunk')
         
@@ -52,7 +41,7 @@ def handle_convert():
             completed_files, text_chunks = pdf_to_audio(file_path, output_path_prefix)
             
             # Create a list of audio file URLs
-            audio_urls = [f'/api/audio/{os.path.basename(f)}' for f in completed_files]
+            audio_urls = [f'/static/output/{os.path.basename(f)}' for f in completed_files]
             
             # Clean up: remove the uploaded PDF
             os.remove(file_path)
@@ -67,10 +56,8 @@ def handle_convert():
     else:
         return jsonify({'error': 'Invalid file type'}), 400
 
-def handle_download():
-    if request.method != 'POST':
-        return jsonify({'error': 'Method not allowed'}), 405
-
+@app.route('/download', methods=['POST'])
+def download():
     audio_files = request.json.get('audio_files', [])
     
     if not audio_files:
@@ -79,7 +66,7 @@ def handle_download():
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w') as zf:
         for file_url in audio_files:
-            file_path = os.path.join('/tmp/output', os.path.basename(file_url))
+            file_path = os.path.join('static', 'output', os.path.basename(file_url))
             if os.path.exists(file_path):
                 zf.write(file_path, os.path.basename(file_path))
             else:
@@ -95,10 +82,3 @@ def handle_download():
         as_attachment=True,
         download_name='audio_files.zip'
     )
-
-@app.route('/api/audio/<filename>')
-def serve_audio(filename):
-    return send_file(f'/tmp/output/{filename}', mimetype='audio/mpeg')
-
-if __name__ == '__main__':
-    app.run(debug=True)
